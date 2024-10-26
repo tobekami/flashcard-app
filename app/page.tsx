@@ -1,113 +1,127 @@
-import Image from "next/image";
+"use client"
+
+import { useEffect } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { GraduationCap, Plane, ArrowRight, LogOut } from 'lucide-react'
 
 export default function Home() {
+  const { user, loading, logout } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid))
+        if (userDoc.exists()) {
+          const userType = userDoc.data().userType
+          localStorage.setItem('lastUserType', userType)
+        }
+      }
+    }
+
+    fetchUserType()
+  }, [user])
+
+  const setUserTypeFirestore = async (type: 'traveler' | 'student') => {
+    if (user) {
+      await setDoc(doc(db, 'users', user.uid), { userType: type }, { merge: true })
+      localStorage.setItem('lastUserType', type)
+    }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    router.push('/login')
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  }
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
+    <div className="relative min-h-screen bg-gradient-to-b from-blue-100 to-purple-100 dark:from-gray-900 dark:to-gray-800">
+      <main className="container mx-auto px-4 py-16">
+        <h1 className="text-5xl font-bold mb-6 text-center text-gray-800 dark:text-white">Welcome to FlashCard AI</h1>
+        <p className="text-xl text-center mb-12 text-gray-600 dark:text-gray-300">
+          Supercharge your learning with AI-powered flashcards for students and travelers
         </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <GraduationCap className="mr-2" />
+                For Students
+              </CardTitle>
+              <CardDescription>Ace your exams with smart flashcards</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Create flashcards for any subject and boost your grades</p>
+              {user ? (
+                <Button className="w-full" onClick={() => {
+                  setUserTypeFirestore('student')
+                  router.push('/flashcards')
+                }}>
+                  Start Learning <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button className="w-full" onClick={() => router.push('/login')}>
+                  Login to Start <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Plane className="mr-2" />
+                For Travelers
+              </CardTitle>
+              <CardDescription>Learn about the world on the go</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="mb-4">Master exciting trivia for your next adventure and beyond</p>
+              {user ? (
+                <Button className="w-full" onClick={() => {
+                  setUserTypeFirestore('traveler')
+                  router.push('/flashcards')
+                }}>
+                  Start Exploring <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              ) : (
+                <Button className="w-full" onClick={() => router.push('/login')}>
+                  Login to Start <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </div>
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+        {user && (
+          <div className="mt-12 text-center">
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>
+              Go to Dashboard
+            </Button>
+          </div>
+        )}
+      </main>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
+      {user && (
+        <Button
+          variant="ghost"
+          className="absolute top-4 right-4"
+          onClick={handleLogout}
         >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+          <LogOut className="mr-2 h-4 w-4" /> Logout
+        </Button>
+      )}
+    </div>
+  )
 }
